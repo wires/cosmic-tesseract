@@ -1,0 +1,15 @@
+{
+  "name": "optics-hypercube",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev": "nodemon -e js,html -x sirv"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "nodemon": "^2.0.15",
+    "sirv-cli": "^1.0.14"
+  }
+}

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css" integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js" integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx" crossorigin="anonymous"></script>
+    <style>
+        #cube, #arcs {
+            position: absolute;
+        }
+        .active {
+            color: greenyellow;
+            background-color: darkgreen;
+            lighting-color: green;
+            border-color: green;
+        }
+        * {
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <script src="linalg.js"></script>
+    <script src="keyboard.min.js"></script>
+    <script src="main.js"></script>
+    <div id="modes"></div>
+    <div class="container">
+        <div id="arcs"></div>
+        <div id="cube"></div>
+    </div>
+</body>
+</html>
