@@ -315,7 +315,7 @@ function render(transform, nodes) {
         let [sx,sy,sz] = current[sId]
         let [dx,dy,dz] = current[dId]
         let z = (sz + dz)/2
-        let lineCoords = shortenLine(20, [sx,sy,dx,dy,z])
+        let lineCoords = shortenLine(30, [sx,sy,dx,dy,z])
         lineCoords.push(label)
         arcs.push(lineCoords)
         let c = center(lineCoords)
