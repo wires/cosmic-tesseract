@@ -395,7 +395,7 @@ function initQuerybar() {
     let input = document.getElementById('query')
     try {
         let hash = window.location.hash
-        let queryString = JSON.parse(decodeURI(hash.slice(1)))
+        let queryString = JSON.parse(atob(decodeURI(hash.slice(1))))
         if(queryString.q) {
             input.value = queryString.q
             console.log('SET_FROM_HASH', input.value)
@@ -423,7 +423,7 @@ function updateQuery(queryString) {
         errDiv.innerHTML = ''
         parseResult.result = result
         parseResult.queryString = queryString
-        window.location.hash = JSON.stringify({q:queryString})
+        window.location.hash = btoa(JSON.stringify({q:queryString}))
     }
     catch(e) {
         errDiv.innerHTML = `<pre>${e}</pre>`
