@@ -200,8 +200,8 @@ function main () {
             rotations.xy = Math.PI/11 * t/3
         } else {
             // update the rotations zw yw yz xw xz xy
-            rotations[mouseMode.x] = (Math.PI * mouseCoords.x/window.innerWidth/2)
-            rotations[mouseMode.y] = (Math.PI * mouseCoords.y/window.innerHeight/2)
+            rotations[mouseMode.x] = (Math.PI * mouseCoords.x/(window.innerWidth/2))
+            rotations[mouseMode.y] = (Math.PI * mouseCoords.y/(window.innerHeight/2))
             rotations[mouseMode.t] = Math.PI * t
         }
 
