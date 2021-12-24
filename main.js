@@ -190,26 +190,26 @@ function main () {
         let t = (Date.now() / 22000) % 1000
         
 
-        // update the rotations zw yw yz xw xz xy
-        rotations[mouseMode.x] = (Math.PI * mouseCoords.x/window.innerWidth/2)
-        rotations[mouseMode.y] = (Math.PI * mouseCoords.y/window.innerHeight/2)
-        rotations[mouseMode.t] = Math.PI * t
+        if (demoMode) {
+            // update the rotations zw yw yz xw xz xy
+            rotations.zw = Math.PI/3 * t/2
+            rotations.yw = Math.PI * mouseCoords.x/window.innerWidth/2
+            rotations.yz = Math.PI * t
+            rotations.xw = -Math.PI/5 * t/1.3
+            rotations.xz = Math.PI * mouseCoords.y/window.innerHeight/2
+            rotations.xy = Math.PI/11 * t/3
+        } else {
+            // update the rotations zw yw yz xw xz xy
+            rotations[mouseMode.x] = (Math.PI * mouseCoords.x/window.innerWidth/2)
+            rotations[mouseMode.y] = (Math.PI * mouseCoords.y/window.innerHeight/2)
+            rotations[mouseMode.t] = Math.PI * t
+        }
 
         let transforms = AXES.map(ax => rot[ax](rotations[ax]))
-
-            // rot.xy(Math.PI/11 * t/3),
-            // rot.xz(Math.PI * mouseCoords.y/window.innerHeight/2),
-            // rot.yz(Math.PI * mouseCoords.x/window.innerWidth/2),
-            // rot.yw(Math.PI * t),
-            // rot.yz(Math.PI * 100),
-            // rot.zw(-Math.PI/5 * t/1.3),
-            // rot.yz(Math.PI/3 * t/2),
-            // rot.yw(-Math.PI/2 * t),
-        // ]
-        
         let transform = matReduce(transforms)
         
         render(transform, nodes)
+        // window.location.hash = JSON.stringify(rotations)
     }
 
     // setTimeout(loop, 100)
@@ -378,7 +378,7 @@ var mouseCoords = {
 var mouseMode = {
     x: 'none',
     y: 'none',
-    t: 'yz'
+    t: 'none'
 }
 
 browserReady().then(() => {
@@ -399,6 +399,7 @@ let keyBindings = {
     x: `q w e r t y u i`.split(' '),
     y: `a s d f g h j k`.split(' ')
 }
+
 for(let i = 0; i < axes.length; i++) {
     keyboardJS.bind(keyBindings.x[i], () => {
         setMouseMode('x', axes[i])
@@ -411,6 +412,22 @@ for(let i = 0; i < axes.length; i++) {
     })
 }
 
+keyboardJS.bind('z', reset())
+
+var demoMode = true
+function toggleDemoMode () {
+    demoMode = !demoMode
+    if(!demoMode) {
+        reset()
+    }
+    initMouseModes()
+}
+
+function reset() {
+    // reset rotations
+    AXES.forEach(a => rotations[a] = 0)
+}
+
 function initMouseModes () {
     let modeSpanX = m => `<button class="${mouseMode.x === m ? 'active' : ''}" onclick="setMouseMode('x','${m}')">${m} [${keyBindings.x[axes.indexOf(m)]}]</button>`
     let modeSpanY = m => `<button class="${mouseMode.y === m ? 'active' : ''}" onclick="setMouseMode('y','${m}')">${m} [${keyBindings.y[axes.indexOf(m)]}]</button>`
@@ -419,7 +436,7 @@ function initMouseModes () {
     let yModes = axes.map(modeSpanY).join('')
     let tModes = axes.map(modeSpanT).join('')
     let divModes = document.getElementById('modes')
-    divModes.innerHTML = `<div>T: ${tModes}<br>X: ${xModes}<br>Y: ${yModes}</div>`
+    divModes.innerHTML = `<div>demo: <button class="${demoMode ? 'active' : ''}" onclick="toggleDemoMode()">demo</button><br>T: ${tModes}<br>X: ${xModes}<br>Y: ${yModes}<br>[z] = reset</div>`
 }
 
 
