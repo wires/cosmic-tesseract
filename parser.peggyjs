@@ -1,0 +1,56 @@
+// Simple Arithmetics Grammar
+// ==========================
+//
+// Accepts expressions like "2 * (3 + 4)" and computes their value.
+
+Transforms = head:Transform tail:(_ @Transform)* {
+	return tail.concat(head)
+}
+
+Transform
+  = a:axis _ '(' _ e:Symbol _ ')' {
+	return {rot:a, theta:e}
+  }
+
+Symbol = e: Expression v:(_ @Var)? {
+	if(v) {
+		return { op: 'mul', lhs: e, rhs: v }
+    } else {
+	    return e
+    }
+}
+
+Expr = e: Expression {
+		return { op: 'expr', expr: e }
+	}
+Var = v:[txy] {
+	return { op: 'var', var: v }
+}
+
+axis = 'zw'/'yw'/'yz'/'xw'/'xz'/'xy'
+
+Expression
+  = head:Term tail:(_ ("+" / "-") _ Term)* {
+      return tail.reduce(function(result, element) {
+        if (element[1] === "+") { return result + element[3]; }
+        if (element[1] === "-") { return result - element[3]; }
+      }, head);
+    }
+
+Term
+  = head:Factor tail:(_ ("*" / "/") _ Factor)* {
+      return tail.reduce(function(result, element) {
+        if (element[1] === "*") { return result * element[3]; }
+        if (element[1] === "/") { return result / element[3]; }
+      }, head);
+    }
+
+Factor
+  = "(" _ expr:Expression _ ")" { return expr; }
+  / Integer
+
+Integer "float"
+  = _ [0-9]+('.' [0-9]+)? { return parseFloat(text(), 10); }
+
+_ "whitespace"
+  = [ \t\n\r]*

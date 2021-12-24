@@ -188,28 +188,31 @@ function main () {
 
     function loop () {
         let t = (Date.now() / 22000) % 1000
+        let x = (Math.PI * mouseCoords.x/(window.innerWidth/2))
+        let y = (Math.PI * mouseCoords.y/(window.innerHeight/2))
+        let env = {t,x,y}
         
+        // if (demoMode) {
+        //     // update the rotations zw yw yz xw xz xy
+        //     rotations.zw = Math.PI/3 * t/2
+        //     rotations.yw = Math.PI * mouseCoords.x/window.innerWidth/2
+        //     rotations.yz = Math.PI * t
+        //     rotations.xw = -Math.PI/5 * t/1.3
+        //     rotations.xz = Math.PI * mouseCoords.y/window.innerHeight/2
+        //     rotations.xy = Math.PI/11 * t/3
+        // } else {
+        //     // update the rotations zw yw yz xw xz xy
+        //     rotations[mouseMode.x] = (Math.PI * mouseCoords.x/(window.innerWidth/2))
+        //     rotations[mouseMode.y] = (Math.PI * mouseCoords.y/(window.innerHeight/2))
+        //     rotations[mouseMode.t] = Math.PI * t
+        // }
 
-        if (demoMode) {
-            // update the rotations zw yw yz xw xz xy
-            rotations.zw = Math.PI/3 * t/2
-            rotations.yw = Math.PI * mouseCoords.x/window.innerWidth/2
-            rotations.yz = Math.PI * t
-            rotations.xw = -Math.PI/5 * t/1.3
-            rotations.xz = Math.PI * mouseCoords.y/window.innerHeight/2
-            rotations.xy = Math.PI/11 * t/3
-        } else {
-            // update the rotations zw yw yz xw xz xy
-            rotations[mouseMode.x] = (Math.PI * mouseCoords.x/(window.innerWidth/2))
-            rotations[mouseMode.y] = (Math.PI * mouseCoords.y/(window.innerHeight/2))
-            rotations[mouseMode.t] = Math.PI * t
-        }
-
-        let transforms = AXES.map(ax => rot[ax](rotations[ax]))
+        // let transforms = AXES.map(ax => rot[ax](rotations[ax]))
+        let transforms = toTranforms(parseResult.result, env)
         let transform = matReduce(transforms)
         
         render(transform, nodes)
-        // window.location.hash = JSON.stringify(rotations)
+        // window.location.hash = JSON.stringify(parseResult.queryString)
     }
 
     // setTimeout(loop, 100)
@@ -257,8 +260,8 @@ function svgEdges(arcs, [width,height]) {
             return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" style="stroke:${color(label, z)};stroke-width:1" marker-end="url(#arrowhead-${quickId(label)})"/>`
         } else {
             let l = length([x1,y1,x2,y2]) / 1.3
-            let dx = (x2-x1)/l
-            let dy = (y2-y1)/l
+            let dx = l == 0 ? 0 : (x2-x1)/l
+            let dy = l == 0 ? 0 : (y2-y1)/l
             let n1 = [-dy,dx]
             let n2 = [dy,-dx]
             return `<line x1="${x1-n1[0]}" y1="${y1-n1[1]}" x2="${x2-n1[0]}" y2="${y2-n1[1]}" style="stroke:${color(label, z)};stroke-width:1"/>` +
@@ -385,7 +388,68 @@ browserReady().then(() => {
    main()
    mouseHandler()
    initMouseModes()
+   initQuerybar()
 })
+
+function initQuerybar() {
+    let input = document.getElementById('query')
+    try {
+        let hash = window.location.hash
+        let queryString = JSON.parse(decodeURI(hash.slice(1)))
+        if(queryString.q) {
+            input.value = queryString.q
+            console.log('SET_FROM_HASH', input.value)
+        }
+    }
+    catch(e){
+        console.error('HASH ERROR', e)
+    }
+    
+    input.addEventListener('input', () => {
+        updateQuery(input.value)
+    })
+    updateQuery(input.value)
+}
+
+var parseResult = {
+    result: false,
+    queryString: ''
+}
+
+function updateQuery(queryString) {
+    let errDiv = document.getElementById('error')
+    try {
+        let result = parser.parse(queryString.trim())
+        errDiv.innerHTML = ''
+        parseResult.result = result
+        parseResult.queryString = queryString
+        window.location.hash = JSON.stringify({q:queryString})
+    }
+    catch(e) {
+        errDiv.innerHTML = `<pre>${e}</pre>`
+    }
+}
+
+function computeFormula(formula, env) {
+    if(typeof(formula) === 'number') {
+        return formula
+    }
+    if(formula.op === "var") {
+        return env[formula.var] || 0
+    }
+    if(formula.op === "mul") {
+        return computeFormula(formula.lhs, env) * computeFormula(formula.rhs, env)
+    }
+}
+
+function toTranforms(parseResult, env) {
+    function toRot(t) {
+        let ax = t.rot
+        let th = computeFormula(t.theta, env) * Math.PI
+        return rot[ax](th)
+    }
+    return parseResult.map(toRot)
+}
 
 function setMouseMode(xy, mode) {
     console.log('SETMOUSEMODE', {xy, mode})
@@ -436,7 +500,7 @@ function initMouseModes () {
     let yModes = axes.map(modeSpanY).join('')
     let tModes = axes.map(modeSpanT).join('')
     let divModes = document.getElementById('modes')
-    divModes.innerHTML = `<div>demo: <button class="${demoMode ? 'active' : ''}" onclick="toggleDemoMode()">demo</button><br>T: ${tModes}<br>X: ${xModes}<br>Y: ${yModes}<br>[z] = reset</div>`
+    // divModes.innerHTML = `<div>demo: <button class="${demoMode ? 'active' : ''}" onclick="toggleDemoMode()">demo</button><br>T: ${tModes}<br>X: ${xModes}<br>Y: ${yModes}<br>[z] = reset</div>`
 }
 
 

@@ -16,19 +16,50 @@
             lighting-color: green;
             border-color: green;
         }
-        * {
+        #cube, #arcs {
             user-select: none;
+        }
+        input {
+            font-family: monospace;
+            width: 90%;
+            font-size: 1.2em;
+            padding: 4px;
+            background-color: ivory;
+        }
+        input, pre {
+            margin: 3px;
+        }
+        pre {
+            color: gray;
         }
     </style>
 </head>
 <body>
     <script src="linalg.js"></script>
     <script src="keyboard.min.js"></script>
+    <script src="parser.js"></script>
     <script src="main.js"></script>
-    <div id="modes"></div>
-    <pre>to switch off demo mode, press "demo".
-To map time to nothing press [1], to map mouse.x to zw-plane rotation press[w], etc</pre>
-Based of <a href="https://arxiv.org/abs/2112.11145">arxiv.org/abs/2112.11145</a> hacked together by <a href="https://twitter.com/wires_wires">wires</a> sources <a href="https://github.com/wires/cosmic-cube">cosmic-cube</a>
+    <div>
+        Based of <a href="https://arxiv.org/abs/2112.11145">arxiv.org/abs/2112.11145</a> hacked together by <a href="https://twitter.com/wires_wires">wires</a> sources <a href="https://github.com/wires/cosmic-cube">cosmic-cube</a><br/>
+        q:<input type="text" id="query" value="zw(1/4) yw(1/4) xz(1/3 t) yz(1/4)"/>
+        <details>
+            <summary>help</summary>
+            <p>
+<pre>this is a stupid language to construct a 4d transformation matrix
+you specify a plane of rotation and it's angle. You can use variables to
+animate the expression.
+
+<b>example:</b> zw(1/4) yw(1/4) xz(1/3 t) yz(1/4)
+
+<b>syntax:</b> <i>plane</i>(<i>expr</i> <i>var</i>?) ..
+<b>planes:</b> zw yw yz xw xz xy
+<b>vars:</b> t (= time) x y (= mouse)<br>
+<b>todo:</b> add scaling, highlighting and filtering
+</pre>
+            </p>
+        </details>
+        <div id="error"></div>
+    </div>
     <div class="container">
         <div id="arcs"></div>
         <div id="cube"></div>
