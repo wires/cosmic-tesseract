@@ -162,8 +162,10 @@ function renderNode(id, coordinates, latex) {
     let x = coordinates[0][0]
     let y = coordinates[1][0]
     let z = coordinates[2][0]
-
-    let [sx,sy] = [scale(x), scale(y)]
+    let f = 4.5
+    let originZ = -5.3
+    let persp = (x,y,z) => [scale(f * x/ (z - originZ)), scale(f * y/(z - originZ))]
+    let [sx,sy] = persp(x,y,z)
     let elem = document.getElementById(id)
     if(elem === null) {
         // create and insert node
@@ -324,10 +326,12 @@ function render(transform, nodes) {
         let c = center(lineCoords)
         let edgeId = edgeIdFromSrcDst(src, dst)
         
-        let latex = label === '=' ? '' : label ?? ''
+        let latex = label === '=' ? '' : label === 'green' ? '' : label ?? ''
         
         // generate or update KaTeX edge label div
-        createOrUpdateEdgeLabelDiv(edgeId, c[0], c[1], z, `{\\scriptsize ${latex}}`)
+        if(latex !== '') {
+            createOrUpdateEdgeLabelDiv(edgeId, c[0], c[1], z, `{\\scriptsize ${latex}}`)
+        }
     }
 
     // generate and set SVG for arrows
