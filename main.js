@@ -157,7 +157,7 @@ let scale = x => (parseFloat(x) + 2.0) * 170.0
 
 let katexedBounds = {}
 
-function renderNode(id, coordinates, latex) {
+function renderNode(id, coordinates, latex, selected) {
     // just project two dimensions
     let x = coordinates[0][0]
     let y = coordinates[1][0]
@@ -167,17 +167,18 @@ function renderNode(id, coordinates, latex) {
     let persp = (x,y,z) => [scale(f * x/ (z - originZ)), scale(f * y/(z - originZ))]
     let [sx,sy] = persp(x,y,z)
     let elem = document.getElementById(id)
+    let zz = selection.selecc ? (selected ? -1.0 : 0.1) : z
     if(elem === null) {
         // create and insert node
         let {div,bounds} = createAndInsert(id, latex)
         katexedBounds[id] = bounds
         let [x,y] = [sx - bounds[0] / 2, sy - bounds[1] / 2]
-        updateDiv(div, x, y, z)
+        updateDiv(div, x, y, zz, selected)
     } else {
         // just update node
         let bounds = katexedBounds[id]
         let [x,y] = [sx - bounds[0] / 2, sy - bounds[1] / 2]
-        updateDiv(elem, x, y, z)
+        updateDiv(elem, x, y, zz, selected)
     }
     return [sx,sy,z]
 }
@@ -251,27 +252,44 @@ let quickId = label => {
     return `qid-${(label??'undef').replace('\\','').replace(/[^a-zA-Z0-9]/g,'_')}`
 }
 
-function svgEdges(arcs, [width,height]) {
+function svgEdges(current, arcs, [width,height]) {
     let mkDef = ([x1,y1,x2,y2,z,label]) => {
         return arrowDef(quickId(label), color(label, z))
     }
     let arrowDefs = arcs.map(mkDef).join('')
     let svg = x => `<svg height="${height}" width="${width}"><defs>${arrowDefs}</defs>\n${x}</svg>`
-    let line = ([x1,y1,x2,y2,z,label]) => {
+    let line = ([x1,y1,x2,y2,z,label,sw]) => {
         if (label !== '=') {
-            return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" style="stroke:${color(label, z)};stroke-width:1" marker-end="url(#arrowhead-${quickId(label)})"/>`
+            return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" style="stroke:${color(label, z)};stroke-width:${sw}" marker-end="url(#arrowhead-${quickId(label)})"/>`
         } else {
             let l = length([x1,y1,x2,y2]) / 1.3
             let dx = l == 0 ? 0 : (x2-x1)/l
             let dy = l == 0 ? 0 : (y2-y1)/l
             let n1 = [-dy,dx]
             let n2 = [dy,-dx]
-            return `<line x1="${x1-n1[0]}" y1="${y1-n1[1]}" x2="${x2-n1[0]}" y2="${y2-n1[1]}" style="stroke:${color(label, z)};stroke-width:1"/>` +
-                `<line x1="${x1-n2[0]}" y1="${y1-n2[1]}" x2="${x2-n2[0]}" y2="${y2-n2[1]}" style="stroke:${color(label, z)};stroke-width:1"/>`
+            return `<line x1="${x1-n1[0]}" y1="${y1-n1[1]}" x2="${x2-n1[0]}" y2="${y2-n1[1]}" style="stroke:${color(label, z)};stroke-width:${sw}"/>` +
+                `<line x1="${x1-n2[0]}" y1="${y1-n2[1]}" x2="${x2-n2[0]}" y2="${y2-n2[1]}" style="stroke:${color(label, z)};stroke-width:${sw}"/>`
         }
     }
+
+    // render the faces
+    let crd = u => current[coordsToNodeId(nodes[u-1].coords)]
+    let xy = u => {
+        let [sx, sy, z] = crd(u)
+        return `${sx.toFixed(1)},${sy.toFixed(1)}`
+    }
+    let faces = []
+    if (selection.selecc) {
+        for(let s of selection.selecc) {
+            if (s.poly) {
+                let pts = [s.poly.u0,s.poly.v0,s.poly.v1,s.poly.u1]
+                faces.push(`<polygon points="${pts.map(xy).join(' ')}" fill="rgba(20,20,190,0.2)"/>`)
+            }
+        }
+    }
+
     let ls = arcs.map(line).join('')
-    return svg(ls)
+    return svg(`${faces.join('')}\n${ls}`)
 }
 
 let center = ([x1,y1,x2,y2,z]) => ([x1 + ((x2 - x1) / 2), y1 + ((y2 - y1) / 2),z])
@@ -295,12 +313,26 @@ let shortenLine = (s, [x1,y1,x2,y2,z]) => {
 
 let edgeIdFromSrcDst = (src,dst) => `edge-${src}-${dst}`
 
+function nodeIsSelecc(node) {
+    if(selection.selecc) {
+        for (let s of selection.selecc) {
+            if(s.vertex && s.vertex === node) {
+                return true
+            }
+            if(s.edge && (s.edge.u === node || s.edge.v === node)) {
+                    return true
+            }
+        }
+    }
+    return false
+}
 function render(transform, nodes) {
     // keep track of screen positions of the nodes
     // used to draw edges
     let current = {}
 
     // transform and render each node
+    let nodeCount = 1
     for(let {latex,coords} of nodes) {
         let id = coordsToNodeId(coords)
         // rotate in 4-space
@@ -309,19 +341,46 @@ function render(transform, nodes) {
         // renderNode projects down the first 2 dimensions
         // z is used for opacity
         // and return this as a coordinate pair [x,y,z]
-        current[id] = renderNode(id, x, latex)
+        let selected = nodeIsSelecc(nodeCount)
+        current[id] = renderNode(id, x, latex, selected)
+        nodeCount++;
     }
     
     // now render the edges
     let arcs = []
+    
+    function isSelecc(src, dst) {
+        if (selection.selecc) {
+            for(let s of selection.selecc) {
+                if (s.edge) {
+                    if ((src === s.edge.u) && (dst === s.edge.v)) {
+                        return true
+                    }
+                    if ((dst === s.edge.u) && (src === s.edge.v)) {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
+
     for(let [src,dst,label] of edges) {
         let sId = edgeIdToNodeId(src)
         let dId = edgeIdToNodeId(dst)
         let [sx,sy,sz] = current[sId]
         let [dx,dy,dz] = current[dId]
-        let z = (sz + dz)/2
+        let z;
+        if (selection.selecc) {
+            z = -1.0
+        } else {
+            z = (sz + dz)/2
+        }
+        let selected = isSelecc(src,dst)
+        let sw = selection.selecc ? (selected ? '1' : '0.5') : '1'
         let lineCoords = shortenLine(30, [sx,sy,dx,dy,z])
         lineCoords.push(label)
+        lineCoords.push(sw)
         arcs.push(lineCoords)
         let c = center(lineCoords)
         let edgeId = edgeIdFromSrcDst(src, dst)
@@ -330,12 +389,13 @@ function render(transform, nodes) {
         
         // generate or update KaTeX edge label div
         if(latex !== '') {
-            createOrUpdateEdgeLabelDiv(edgeId, c[0], c[1], z, `{\\scriptsize ${latex}}`)
+            createOrUpdateEdgeLabelDiv(edgeId, c[0], c[1], selected ? -1.0 : 0.04, `{\\scriptsize ${latex}}`)
         }
     }
 
+
     // generate and set SVG for arrows
-    document.getElementById('arcs').innerHTML = svgEdges(arcs, [1000, 1000])
+    document.getElementById('arcs').innerHTML = svgEdges(current, arcs, [1000, 1000])
 }
 
 let katexedEdgeLabelBounds = {}
@@ -420,6 +480,42 @@ var parseResult = {
     queryString: ''
 }
 
+var selection = {}
+
+function computeSelection(parseResult) {
+    // ugh don't wnat to modify parser
+    let selecc = []
+    function pushFace(sel) {
+        selecc.push({edge: {u:sel.e1.u,v:sel.e1.v}})
+        selecc.push({edge: {u:sel.e2.u,v:sel.e2.v}})
+        selecc.push({edge: {u:sel.e1.u,v:sel.e2.v}})
+        selecc.push({edge: {u:sel.e2.u,v:sel.e1.v}})
+        selecc.push({poly: {u0:sel.e1.u,u1:sel.e2.u,v0:sel.e1.v,v1:sel.e2.v}})
+    }
+    parseResult.forEach(op => {
+        if(op.selecc) {
+            for(let sel of op.selecc) {
+                if(typeof(sel) === 'number') {
+                    // vertex
+                    selecc.push({vertex: sel})
+                } else if (sel.selecc === 'edge') {
+                    selecc.push({edge: {u:sel.u,v:sel.v}})
+                } else if (sel.selecc === 'face') {
+                    pushFace(sel)
+                } else if (sel.selecc === 'cube') {
+                    pushFace(sel.f1)
+                    pushFace(sel.f2)
+                    pushFace({e1:sel.f1.e1,e2:sel.f2.e2})
+                    pushFace({e1:sel.f2.e1,e2:sel.f1.e2})
+                    pushFace({e1:sel.f1.e1,e2:sel.f2.e1})
+                    pushFace({e1:sel.f1.e2,e2:sel.f2.e2})
+                }
+            }
+        }
+    })
+    selection.selecc = selecc.length ? selecc : false
+}
+
 function updateQuery(queryString) {
     let errDiv = document.getElementById('error')
     try {
@@ -427,7 +523,11 @@ function updateQuery(queryString) {
         errDiv.innerHTML = ''
         parseResult.result = result
         parseResult.queryString = queryString
+        console.log('PARSE', result)
         window.location.hash = btoa(JSON.stringify({q:queryString}))
+
+        // but also, update the selection
+        parseResult.selection = computeSelection(result)
     }
     catch(e) {
         errDiv.innerHTML = `<pre>${e}</pre>`
@@ -452,7 +552,10 @@ function toTranforms(parseResult, env) {
         let th = computeFormula(t.theta, env) * Math.PI
         return rot[ax](th)
     }
-    return parseResult.map(toRot)
+    function isRot(t) {
+        return t.rot
+    }
+    return parseResult.filter(isRot).map(toRot)
 }
 
 function setMouseMode(xy, mode) {

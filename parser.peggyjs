@@ -3,14 +3,41 @@
 //
 // Accepts expressions like "2 * (3 + 4)" and computes their value.
 
-Transforms = head:Transform tail:(_ @Transform)* {
-	return tail.concat(head)
+Transforms = _ head:Transform tail:(_ @Transform)* _ {
+	return [head].concat(tail)
 }
 
 Transform
   = a:axis _ '(' _ e:Symbol _ ')' {
 	return {rot:a, theta:e}
   }
+  / 'scale(' d:dim _ ','? e:Symbol _ ')' {
+	return {scale:d, value:e}
+  }
+  / '[' @selection ']'
+
+selection = seleccs
+seleccs = hd:selecc tail:(_ @selecc)* {
+	return {selecc:[hd].concat(tail)}
+}
+selecc
+	= cube
+    / face
+    / edge
+    / vertex
+
+cube = f1:face _ '==' _ f2:face {
+	return {selecc:'cube',f1,f2}
+}    
+face = e1:edge _ '=' _ e2:edge {
+	return {selecc:'face',e1,e2}
+}
+edge = u:vertex _ '-' _ v:vertex {
+	return {selecc:'edge',u,v}
+}
+vertex = [1-9][0-9]? { return parseInt(text()) }
+
+dim = 'x'/'y'/'z'/'w'
 
 Symbol = e: Expression v:(_ @Var)? {
 	if(v) {
