@@ -40,9 +40,9 @@
     <script src="parser.js"></script>
     <script src="main.js"></script>
     <div>
-        paper: <a href="https://arxiv.org/abs/2112.11145">arxiv.org/abs/2112.11145</a>, hacked together by <a href="https://twitter.com/wires_wires"><b>@wires</b></a>, sourcecode: <a href="https://github.com/wires/cosmic-tesseract">github.com/wires/cosmic-tesseract</a><br/>
-        q:<input type="text" id="query" value="zw(1/4) yz(1 x) xz(1/7 t) yz(1/4 y) [1-2=4-3 5-6=8-7 1-4=5-8 2-3=6-7 1-2=5-6 3-4=7-8]"/><br>
-        <code>zw yw yz xw xz xy</code>
+        <button onclick="document.getElementById('query').value='zw(1/4) yz(1 x) xz(1/7 t) yz(1/4 y) [1-2=4-3 5-6=8-7 1-4=5-8 2-3=6-7 1-2=5-6 3-4=7-8]';updateQuery(document.getElementById('query').value)">reset</button>
+        planes: <code style="color: rgb(126, 185, 135); background-color: rgb(212, 212, 212); padding: 2px 4px ">zw yw yz xw xz xy</code> paper: <a href="https://arxiv.org/abs/2112.11145">arxiv.org/abs/2112.11145</a>, hacked together by <a href="https://twitter.com/wires_wires"><b>@wires</b></a>, sourcecode: <a href="https://github.com/wires/cosmic-tesseract">github.com/wires/cosmic-tesseract</a><br/>
+        <input type="text" id="query" value="zw(1/4) yz(1 x) xz(1/7 t) yz(1/4 y) [1-2=4-3 5-6=8-7 1-4=5-8 2-3=6-7 1-2=5-6 3-4=7-8]"/><br>
         <details>
             <summary>help</summary>
             <p>
